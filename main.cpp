@@ -12,9 +12,11 @@ int main()
     "int index = get_global_id(0)\n"
     "sum[index] += sum[index]\n"
     "}\n";
-    cl_base.createOpenCLEnv();
-    cl_base.processKernelProgram(kernel_source, "test");
-    cl_base.eqNDRangeKernel(work_dim, g_work_offect,
-    g_work_size, l_work_size);
+    if (0 != cl_base.createOpenCLEnv())
+    {
+      cl_base.processKernelProgram(kernel_source, "test");
+      cl_base.eqNDRangeKernel(work_dim, g_work_offect,
+      g_work_size, l_work_size);
+    }
     return 0;
 }
