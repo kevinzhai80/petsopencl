@@ -12,6 +12,7 @@ public:
 	int processKernelProgram(char *ksource, char *kname);
 	int eqNDRangeKernel(cl_uint work_dim, size_t *g_work_offect, size_t *g_work_size, size_t *l_work_size);
 	void release();
+        char* getProgramBuildInfo(int logSize);
 private:
   	cl_command_queue ccq;
 	cl_context cc;

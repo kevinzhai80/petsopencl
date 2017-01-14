@@ -6,6 +6,7 @@ using namespace std;
 int openCommBase::createOpenCLEnv(void)
 {
     cl_int ret = 0;
+#if 0
     //Get platform number and ID.
     ret = clGetPlatformIDs(0, NULL, &num_platform);
     if (CL_SUCCESS == ret || num_platform < 1)
@@ -13,7 +14,8 @@ int openCommBase::createOpenCLEnv(void)
       cout << "Error getting platform number:" << ret << endl;
       return -1;
     }
-    ret = clGetPlatformIDs(0, &platform_id, NULL);
+#endif    
+    ret = clGetPlatformIDs(1, &platform_id, NULL);
     if (CL_SUCCESS != ret)
     {
       cout << "Error getting platform id:" << ret << endl;
@@ -26,7 +28,7 @@ int openCommBase::createOpenCLEnv(void)
       cout << "Error getting GPU device number:" << ret << endl;
       return -1;
     }
-    ret = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 0, &device_id, NULL);
+    ret = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, num_device, &device_id, NULL);
     if (CL_SUCCESS != ret)
     {
       cout << "Error getting GPU device id:" << ret << endl;
@@ -48,11 +50,14 @@ int openCommBase::createOpenCLEnv(void)
       return -1;
     }
     //Create memory obj.
-    int * host_ptr = NULL;
+    int *host_ptr = NULL;
     int arr_size = 1000;
-     
     host_ptr = (int *)malloc(arr_size*sizeof(int));
-    memcpy(host_ptr, (char*)'0', arr_size*sizeof(int));
+    if (host_ptr == NULL)
+    {
+      cout << "get memory failed" <<endl;
+    }
+    memset(host_ptr, '0', arr_size*sizeof(int));
     cm = clCreateBuffer(cc, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, arr_size*sizeof(int), host_ptr, &ret);
     if (CL_SUCCESS != ret || cm == NULL)
     {
@@ -61,6 +66,25 @@ int openCommBase::createOpenCLEnv(void)
     }
     free(host_ptr);
     return ret;
+}
+
+char* openCommBase::getProgramBuildInfo(int log_size)
+{
+    size_t len;
+    char* program_log;
+
+    program_log = (char*)malloc(log_size*sizeof(char));
+    if (program_log == NULL)
+    {
+      cout << "get log memory failed" << endl;
+      return NULL;
+    }
+    cout << "log_size:" << log_size << endl;
+    memset(program_log, '\0', log_size);
+
+    clGetProgramBuildInfo(cp, device_id, CL_PROGRAM_BUILD_LOG, log_size+1, program_log, &len);
+
+    cout << "log:" << program_log << endl;
 }
 
 int openCommBase::processKernelProgram(char *ksource, char *kname)
@@ -74,9 +98,12 @@ int openCommBase::processKernelProgram(char *ksource, char *kname)
       return -1;
     }
     ret = clBuildProgram(cp, 1, &device_id, NULL, NULL, NULL);
+    if (ret == CL_BUILD_PROGRAM_FAILURE)
+    cout << "buildProgram ret:" << ret << endl;
     if (CL_SUCCESS != ret)
     {
       cout << "Error build program:" << ret << endl;
+      getProgramBuildInfo(100);
       return -1;
     }
     ck = clCreateKernel(cp, kname, &ret);
